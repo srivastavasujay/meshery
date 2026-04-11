@@ -1,0 +1,105 @@
+{
+  "id": "00000000-0000-0000-0000-000000000000",
+  "schemaVersion": "relationships.meshery.io/v1alpha3",
+  "version": "v1.0.0",
+  "kind": "edge",
+  "type": "non-binding",
+  "subType": "reference",
+  "evaluationQuery": "edge_non_binding_reference_relationship",
+  "status": "enabled",
+  "metadata": {
+    "description": "A relationship that represents the DCGM Exporter DaemonSet exposing GPU metrics via a Kubernetes Service. The Service is the scrape endpoint consumed by Prometheus or other collectors.",
+    "capabilities": {
+      "designer": {
+        "edit": {
+          "style": true,
+          "config": false,
+          "label": true
+        }
+      }
+    }
+  },
+  "model": {
+    "schemaVersion": "models.meshery.io/v1beta1",
+    "version": "v1.0.0",
+    "name": "nvidia-gpu-operator",
+    "registrant": {
+      "kind": "github"
+    },
+    "model": {
+      "version": "v26.3.0"
+    },
+    "displayName": "NVIDIA GPU Operator",
+    "category": {
+      "name": "Provisioning",
+      "metadata": null
+    },
+    "metadata": {}
+  },
+  "selectors": [
+    {
+      "allow": {
+        "from": [
+          {
+            "kind": "DaemonSet",
+            "model": {
+              "name": "kubernetes",
+              "registrant": {
+                "kind": "github"
+              },
+              "version": ""
+            },
+            "patch": {
+              "patchStrategy": "replace",
+              "mutatorRef": [
+                [
+                  "spec",
+                  "selector",
+                  "matchLabels"
+                ]
+              ],
+              "description": "DCGM Exporter DaemonSet whose pod labels are selected by the Service."
+            },
+            "match_strategy_matrix": [
+              [
+                "to_contains_from",
+                "not_null"
+              ]
+            ],
+            "id": null,
+            "match": {}
+          }
+        ],
+        "to": [
+          {
+            "kind": "Service",
+            "model": {
+              "name": "kubernetes",
+              "registrant": {
+                "kind": "github"
+              },
+              "version": ""
+            },
+            "patch": {
+              "patchStrategy": "replace",
+              "mutatedRef": [
+                [
+                  "spec",
+                  "selector"
+                ]
+              ],
+              "description": "Service that selects DCGM Exporter pods and exposes the metrics port."
+            },
+            "match_strategy_matrix": null,
+            "id": null,
+            "match": {}
+          }
+        ]
+      },
+      "deny": {
+        "from": [],
+        "to": []
+      }
+    }
+  ]
+}

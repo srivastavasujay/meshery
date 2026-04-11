@@ -1,0 +1,105 @@
+{
+  "id": "00000000-0000-0000-0000-000000000000",
+  "schemaVersion": "relationships.meshery.io/v1alpha3",
+  "version": "v1.0.0",
+  "kind": "edge",
+  "type": "non-binding",
+  "subType": "reference",
+  "status": "enabled",
+  "metadata": {
+    "description": "A relationship that defines how a ClusterPolicy configures and references an NVIDIADriver resource to manage the NVIDIA kernel driver lifecycle on cluster nodes.",
+    "capabilities": {
+      "designer": {
+        "edit": {
+          "style": true,
+          "config": false,
+          "label": true
+        }
+      }
+    }
+  },
+  "model": {
+    "schemaVersion": "models.meshery.io/v1beta1",
+    "version": "v1.0.0",
+    "name": "nvidia-gpu-operator",
+    "registrant": {
+      "kind": "github"
+    },
+    "model": {
+      "version": "v26.3.0"
+    },
+    "displayName": "NVIDIA GPU Operator",
+    "category": {
+      "name": "Provisioning",
+      "metadata": null
+    },
+    "metadata": {}
+  },
+  "selectors": [
+    {
+      "allow": {
+        "from": [
+          {
+            "kind": "ClusterPolicy",
+            "model": {
+              "name": "nvidia-gpu-operator",
+              "registrant": {
+                "kind": "github"
+              },
+              "version": ""
+            },
+            "patch": {
+              "patchStrategy": "replace",
+              "mutatorRef": [
+                [
+                  "spec",
+                  "driver",
+                  "version"
+                ]
+              ],
+              "description": "ClusterPolicy configures the driver version and settings for the NVIDIADriver workload."
+            },
+            "match_strategy_matrix": [
+              [
+                "equal_as_strings",
+                "not_null"
+              ]
+            ],
+            "id": null,
+            "match": {}
+          }
+        ],
+        "to": [
+          {
+            "kind": "NVIDIADriver",
+            "model": {
+              "name": "nvidia-gpu-operator",
+              "registrant": {
+                "kind": "github"
+              },
+              "version": ""
+            },
+            "patch": {
+              "patchStrategy": "replace",
+              "mutatedRef": [
+                [
+                  "spec",
+                  "version"
+                ]
+              ],
+              "description": "NVIDIADriver receives driver version configuration from the ClusterPolicy."
+            },
+            "match_strategy_matrix": null,
+            "id": null,
+            "match": {}
+          }
+        ]
+      },
+      "deny": {
+        "from": [],
+        "to": []
+      }
+    }
+  ],
+  "evaluationQuery": "edge_non_binding_reference_relationship"
+}
