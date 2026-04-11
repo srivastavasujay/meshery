@@ -1,0 +1,105 @@
+{
+  "id": "00000000-0000-0000-0000-000000000000",
+  "schemaVersion": "relationships.meshery.io/v1alpha3",
+  "version": "v1.0.0",
+  "kind": "edge",
+  "type": "non-binding",
+  "subType": "reference",
+  "evaluationQuery": "edge_non_binding_reference_relationship",
+  "status": "enabled",
+  "metadata": {
+    "description": "A relationship that represents a Prometheus instance discovering and collecting metrics from ServiceMonitors that target DCGM Exporter. Applies when the servicemonitors.monitoring.coreos.com CRD is present and ServiceMonitor integration is enabled.",
+    "capabilities": {
+      "designer": {
+        "edit": {
+          "style": true,
+          "config": false,
+          "label": true
+        }
+      }
+    }
+  },
+  "model": {
+    "schemaVersion": "models.meshery.io/v1beta1",
+    "version": "v1.0.0",
+    "name": "nvidia-gpu-operator",
+    "registrant": {
+      "kind": "github"
+    },
+    "model": {
+      "version": "v26.3.0"
+    },
+    "displayName": "NVIDIA GPU Operator",
+    "category": {
+      "name": "Provisioning",
+      "metadata": null
+    },
+    "metadata": {}
+  },
+  "selectors": [
+    {
+      "allow": {
+        "from": [
+          {
+            "kind": "Prometheus",
+            "model": {
+              "name": "kube-prometheus-stack",
+              "registrant": {
+                "kind": "artifacthub"
+              },
+              "version": ""
+            },
+            "patch": {
+              "patchStrategy": "replace",
+              "mutatorRef": [
+                [
+                  "spec",
+                  "serviceMonitorSelector",
+                  "matchLabels"
+                ]
+              ],
+              "description": "Prometheus instance whose serviceMonitorSelector targets the DCGM Exporter ServiceMonitor."
+            },
+            "match_strategy_matrix": [
+              [
+                "to_contains_from",
+                "not_null"
+              ]
+            ],
+            "id": null,
+            "match": {}
+          }
+        ],
+        "to": [
+          {
+            "kind": "ServiceMonitor",
+            "model": {
+              "name": "kube-prometheus-stack",
+              "registrant": {
+                "kind": "artifacthub"
+              },
+              "version": ""
+            },
+            "patch": {
+              "patchStrategy": "replace",
+              "mutatedRef": [
+                [
+                  "metadata",
+                  "labels"
+                ]
+              ],
+              "description": "ServiceMonitor selected by the Prometheus instance for DCGM metrics collection."
+            },
+            "match_strategy_matrix": null,
+            "id": null,
+            "match": {}
+          }
+        ]
+      },
+      "deny": {
+        "from": [],
+        "to": []
+      }
+    }
+  ]
+}
