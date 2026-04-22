@@ -1068,7 +1068,7 @@ function MesheryPatterns({
               condition: visibility === VISIBILITY.PUBLISHED,
             },
             {
-              label: 'Edit',
+              label: 'Edit Design',
               icon: <PatternConfigureIcon />,
               onClick: (e) => {
                 e.stopPropagation();
