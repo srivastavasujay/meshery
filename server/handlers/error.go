@@ -171,6 +171,11 @@ const (
 	ErrFetchTokenCode                      = "meshery-server-1386"
 	ErrShareDesignCode                     = "meshery-server-1387"
 	ErrShareFilterCode                     = "meshery-server-1388"
+	ErrGetUserCredentialCode               = "meshery-server-1389"
+	ErrSaveUserCredentialCode              = "meshery-server-1390"
+	ErrUpdateUserCredentialCode            = "meshery-server-1391"
+	ErrDeleteUserCredentialCode            = "meshery-server-1392"
+	ErrEncodeUserCredentialCode            = "meshery-server-1393"
 )
 
 var (
@@ -718,4 +723,24 @@ func ErrShareDesign(err error) error {
 
 func ErrShareFilter(err error) error {
 	return errors.New(ErrShareFilterCode, errors.Alert, []string{"Failed to share filter"}, []string{err.Error()}, []string{"The remote provider rejected the share request", "Network connectivity issue", "Invalid payload"}, []string{"Verify the share request payload and target recipients, then retry"})
+}
+
+func ErrGetUserCredential(err error) error {
+	return errors.New(ErrGetUserCredentialCode, errors.Alert, []string{"Failed to get user credential"}, []string{err.Error()}, []string{"Credential may not exist, caller may lack access, or the provider is unreachable"}, []string{"Verify the credential id and that the current user has access to it"})
+}
+
+func ErrSaveUserCredential(err error) error {
+	return errors.New(ErrSaveUserCredentialCode, errors.Alert, []string{"Failed to save user credential"}, []string{err.Error()}, []string{"Invalid credential payload or the provider rejected the request"}, []string{"Verify the credential payload matches the expected schema and retry"})
+}
+
+func ErrUpdateUserCredential(err error) error {
+	return errors.New(ErrUpdateUserCredentialCode, errors.Alert, []string{"Failed to update user credential"}, []string{err.Error()}, []string{"Credential may not exist, caller may lack access, or the payload is invalid"}, []string{"Verify the credential id, caller permissions, and payload, then retry"})
+}
+
+func ErrDeleteUserCredential(err error) error {
+	return errors.New(ErrDeleteUserCredentialCode, errors.Alert, []string{"Failed to delete user credential"}, []string{err.Error()}, []string{"Credential may not exist or the caller may lack permission"}, []string{"Verify the credential id and caller permissions, then retry"})
+}
+
+func ErrEncodeUserCredential(err error) error {
+	return errors.New(ErrEncodeUserCredentialCode, errors.Alert, []string{"Failed to encode user credential response"}, []string{err.Error()}, []string{"Credential payload could not be serialized to JSON"}, []string{"Check server logs for serialization details"})
 }
