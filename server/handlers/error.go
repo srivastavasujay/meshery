@@ -164,6 +164,8 @@ const (
 	ErrEncodeResponseCode                  = "meshery-server-1374"
 	ErrTransientProviderCode               = "meshery-server-1378"
 	ErrServeSchemaCode                     = "meshery-server-1381"
+	ErrInvalidFileRequestCode              = "meshery-server-1382"
+	ErrReadFileContentCode                 = "meshery-server-1383"
 )
 
 var (
@@ -686,4 +688,10 @@ func ErrCreatingOPAInstance(err error) error {
 }
 func ErrServeSchema(err error) error {
 	return errors.New(ErrServeSchemaCode, errors.Alert, []string{"Failed to serve the requested schema"}, []string{err.Error()}, []string{"Requested resource's schema could not be found or read"}, []string{"Ensure the resource name is spelled correctly and that the schema is bundled with the server"})
+}
+func ErrInvalidFileRequest(err error) error {
+	return errors.New(ErrInvalidFileRequestCode, errors.Alert, []string{"Invalid file request"}, []string{err.Error()}, []string{"The provided file query parameter could not be decoded"}, []string{"Ensure the file parameter is a properly URL-encoded path"})
+}
+func ErrReadFileContent(err error, file string) error {
+	return errors.New(ErrReadFileContentCode, errors.Alert, []string{"Failed to read file content", file}, []string{err.Error()}, []string{"The file could not be opened or streamed to the response"}, []string{"Verify the file exists and the server has permission to read it"})
 }
