@@ -189,6 +189,8 @@ const (
 	ErrMigrateDatabaseTablesCode           = "meshery-server-1404"
 	ErrFetchResultsCode                    = "meshery-server-1405"
 	ErrMissingResultIDCode                 = "meshery-server-1406"
+	ErrGenerateUUIDCode                    = "meshery-server-1407"
+	ErrMethodNotAllowedCode                = "meshery-server-1408"
 )
 
 var (
@@ -808,4 +810,12 @@ func ErrFetchResults(err error) error {
 
 func ErrMissingResultID() error {
 	return errors.New(ErrMissingResultIDCode, errors.Alert, []string{"Missing result id in request"}, []string{"No result id was supplied in the URL path"}, []string{"The client did not include a result identifier"}, []string{"Provide the result id in the request URL, for example /api/user/performance/results/{id}"})
+}
+
+func ErrGenerateUUID(err error) error {
+	return errors.New(ErrGenerateUUIDCode, errors.Alert, []string{"Failed to generate a unique identifier"}, []string{err.Error()}, []string{"Secure random source is unavailable on this host"}, []string{"Retry the request; if the error persists, verify the host's /dev/urandom or equivalent entropy source is accessible"})
+}
+
+func ErrMethodNotAllowed(method string) error {
+	return errors.New(ErrMethodNotAllowedCode, errors.Alert, []string{"HTTP method not allowed for this endpoint"}, []string{fmt.Sprintf("Received %s, but the endpoint only accepts the methods registered on its route", method)}, []string{"The client used an HTTP verb the route does not support"}, []string{"Use one of the supported HTTP methods for this endpoint"})
 }
