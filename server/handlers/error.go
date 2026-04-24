@@ -199,6 +199,8 @@ const (
 	ErrExportModelCode                     = "meshery-server-1414"
 	ErrInvalidContextsConfigCode           = "meshery-server-1415"
 	ErrEmptyConnectionIDCode               = "meshery-server-1416"
+	ErrPolicyEvalTimeoutCode               = "meshery-server-1417"
+	ErrPolicyEvalCode                      = "meshery-server-1418"
 )
 
 var (
@@ -886,4 +888,17 @@ func ErrInvalidContextsConfig(err error) error {
 // ID query parameter when none is supplied. Emitted with HTTP 400.
 func ErrEmptyConnectionID() error {
 	return errors.New(ErrEmptyConnectionIDCode, errors.Alert, []string{"Empty connection ID"}, []string{"No connection ID was supplied in the canonical `connectionId` query parameter (the legacy `connection_id` spelling is also accepted during the Phase 2 deprecation window)."}, []string{"The client did not pass `connectionId` in the query string.", "A URL template did not get its parameter substituted."}, []string{"Pass the connection ID of the Kubernetes context to be pinged, e.g. /api/system/kubernetes/ping?connectionId=<id>."})
+}
+
+// ErrPolicyEvalTimeout wraps the `errEvalTimeout` sentinel from
+// policy_relationship_handler.go with structured MeshKit metadata when the
+// handler surfaces it over the wire. Emitted with HTTP 504 Gateway Timeout.
+func ErrPolicyEvalTimeout(timeout fmt.Stringer) error {
+	return errors.New(ErrPolicyEvalTimeoutCode, errors.Alert, []string{"Relationship policy evaluation timed out"}, []string{fmt.Sprintf("The relationship policy evaluator did not return a response within %s.", timeout)}, []string{"The design is large enough that the policy engine needs more than the configured timeout.", "One of the Rego/Go policies under evaluation is in a slow path or infinite loop."}, []string{"Increase the POLICY_EVAL_TIMEOUT setting (default 3m) if the design genuinely needs more time, or retry with a smaller design."})
+}
+
+// ErrPolicyEval wraps a generic policy-evaluation failure returned by the
+// relationship evaluator (OPA/Rego or the Go engine). Emitted with HTTP 500.
+func ErrPolicyEval(err error) error {
+	return errors.New(ErrPolicyEvalCode, errors.Alert, []string{"Relationship policy evaluation failed"}, []string{err.Error()}, []string{"A registered relationship policy returned an error during evaluation.", "A cycle or invalid declaration in the design triggered an engine panic recovered as an error."}, []string{"Inspect server logs for the underlying policy error. If the design has recently been edited, revert the most recent change and retry."})
 }
