@@ -81,7 +81,7 @@ To run the tests successfully, you need be logged in to your Meshery account. Th
 
 **Remote Provider Example**
 
-If you are using Layer5 Cloud as your remote provider, you can [generate and download an API token](https://cloud.meshery.io/security/tokens) from your user account for use while writing and executing tests.
+If you are using Meshery Cloud as your remote provider, you can [generate and download an API token](https://cloud.meshery.io/security/tokens) from your user account for use while writing and executing tests.
 
 ### Verify your API Token
 
