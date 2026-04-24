@@ -1,141 +1,53 @@
 package handlers
 
 import (
-	"encoding/json"
 	"net/http"
 	"strconv"
 
-	meshkiterrors "github.com/meshery/meshkit/errors"
+	"github.com/meshery/meshery/server/models/httputil"
 )
 
 // Response helpers
 // ----------------
 //
-// These three helpers are the canonical way to write an HTTP response from
+// These four helpers are the canonical way to write an HTTP response from
 // server/handlers. Never use http.Error — it emits Content-Type: text/plain
 // which crashes RTK Query's default baseQuery on the UI (see
 // docs/content/en/project/contributing/error-contract.md).
 //
-// Reach for:
-//   - writeMeshkitError  — ANY error path. If err wraps a *meshkiterrors.Error
-//                          or *ErrorV2, the code/severity/cause/remediation
-//                          survive onto the wire. If it doesn't, the .Error()
-//                          string is still emitted as JSON.
-//   - writeJSONError     — error paths where the message is a bare string with
-//                          no MeshKit wrapper. Prefer promoting the string to
-//                          a MeshKit error and using writeMeshkitError instead.
-//   - writeJSONMessage   — success paths that return a small status or result
-//                          payload (e.g. {"message": "deleted"}).
-
-// writeJSONError writes a JSON-encoded {"error": message} body with the given
-// HTTP status. Using JSON (instead of http.Error's plain text) keeps client
-// response parsers — notably RTK Query's default baseQuery, which parses by
-// Content-Type and treats application/json as JSON — from choking on error
-// bodies that happen to start with a letter (e.g. "WorkspaceID or OrgID ...").
-func writeJSONError(w http.ResponseWriter, message string, status int) {
-	w.Header().Set("Content-Type", "application/json; charset=utf-8")
-	w.Header().Set("X-Content-Type-Options", "nosniff")
-	w.WriteHeader(status)
-	_ = json.NewEncoder(w).Encode(map[string]string{"error": message})
-}
-
-// errorResponse is the wire shape for all non-2xx responses from Meshery Server.
-// Fields mirror github.com/meshery/meshkit/errors.Error; omitempty keeps the
-// body small for bare-string errors that carry no MeshKit metadata.
-type errorResponse struct {
-	Error                string   `json:"error"`
-	Code                 string   `json:"code,omitempty"`
-	Severity             string   `json:"severity,omitempty"`
-	ProbableCause        []string `json:"probable_cause,omitempty"`
-	SuggestedRemediation []string `json:"suggested_remediation,omitempty"`
-	LongDescription      []string `json:"long_description,omitempty"`
-}
-
-// writeMeshkitError writes a JSON error response that preserves MeshKit error
-// metadata (code, severity, probable cause, remediation) when err is (or wraps)
-// a *meshkiterrors.Error or *meshkiterrors.ErrorV2. Non-MeshKit errors still
-// produce a JSON body — they just carry only the .Error() string, matching
-// writeJSONError's shape so clients never see plain text from this package.
+// The real implementations live in server/models/httputil so both
+// server/handlers and server/models (and any future sibling) can call them
+// without an import cycle. These wrappers preserve the original unexported
+// identifiers so none of the ~150 existing call sites in this package had to
+// change during the migration.
 //
-// Prefer this over http.Error for every handler error path. RTK Query's
-// baseQuery dispatches on Content-Type and crashes on plain-text bodies that
-// happen to start with a letter (e.g. "Status Code: 404 ...").
+// Reach for:
+//   - writeMeshkitError     — ANY error path. If err wraps a *meshkiterrors.Error
+//                             or *ErrorV2, the code/severity/cause/remediation
+//                             survive onto the wire. If it doesn't, the .Error()
+//                             string is still emitted as JSON.
+//   - writeJSONError        — error paths where the message is a bare string with
+//                             no MeshKit wrapper. Prefer promoting the string to
+//                             a MeshKit error and using writeMeshkitError instead.
+//   - writeJSONMessage      — success paths that return a small status or result
+//                             payload (e.g. {"message": "deleted"}).
+//   - writeJSONEmptyObject  — success paths that need to return an empty JSON
+//                             object ({}) with the Content-Type header set.
+
+func writeJSONError(w http.ResponseWriter, message string, status int) {
+	httputil.WriteJSONError(w, message, status)
+}
+
 func writeMeshkitError(w http.ResponseWriter, err error, status int) {
-	w.Header().Set("Content-Type", "application/json; charset=utf-8")
-	w.Header().Set("X-Content-Type-Options", "nosniff")
-	w.WriteHeader(status)
-
-	resp := errorResponse{}
-	if err == nil {
-		resp.Error = http.StatusText(status)
-		_ = json.NewEncoder(w).Encode(resp)
-		return
-	}
-
-	resp.Error = err.Error()
-
-	// Populate MeshKit fields only when the error carries them. GetCode etc.
-	// return the "None" sentinel for non-MeshKit errors; treat that as absent.
-	if code := meshkiterrors.GetCode(err); code != "" && code != "None" {
-		resp.Code = code
-		resp.Severity = severityString(meshkiterrors.GetSeverity(err))
-		if short := meshkiterrors.GetSDescription(err); short != "" && short != "None" {
-			// Use ShortDescription as the user-facing `error` when available —
-			// err.Error() on a MeshKit error concatenates every field with pipes.
-			resp.Error = short
-		}
-		if long := meshkiterrors.GetLDescription(err); long != "" && long != "None" {
-			resp.LongDescription = []string{long}
-		}
-		if cause := meshkiterrors.GetCause(err); cause != "" && cause != "None" {
-			resp.ProbableCause = []string{cause}
-		}
-		if remedy := meshkiterrors.GetRemedy(err); remedy != "" && remedy != "None" {
-			resp.SuggestedRemediation = []string{remedy}
-		}
-	}
-
-	_ = json.NewEncoder(w).Encode(resp)
+	httputil.WriteMeshkitError(w, err, status)
 }
 
-// severityString converts a MeshKit Severity enum to the string label used on
-// the wire. Kept here (not in MeshKit) because MeshKit's Severity.String is
-// not yet exported in all versions we pin.
-func severityString(s meshkiterrors.Severity) string {
-	switch s {
-	case meshkiterrors.Emergency:
-		return "EMERGENCY"
-	case meshkiterrors.Alert:
-		return "ALERT"
-	case meshkiterrors.Critical:
-		return "CRITICAL"
-	case meshkiterrors.Fatal:
-		return "FATAL"
-	default:
-		return "ERROR"
-	}
-}
-
-// writeJSONMessage encodes an arbitrary payload as JSON with the given status
-// code. Use for success responses that currently write a bare string (e.g.
-// "Database reset successful") — promote them to a structured message.
 func writeJSONMessage(w http.ResponseWriter, payload any, status int) {
-	w.Header().Set("Content-Type", "application/json; charset=utf-8")
-	w.Header().Set("X-Content-Type-Options", "nosniff")
-	w.WriteHeader(status)
-	_ = json.NewEncoder(w).Encode(payload)
+	httputil.WriteJSONMessage(w, payload, status)
 }
 
-// writeJSONEmptyObject writes "{}" with Content-Type: application/json.
-// Several handlers return an empty object to indicate "no data, but request
-// succeeded"; this helper centralizes the pattern and guarantees the header
-// so clients (notably RTK Query's Content-Type-dispatching baseQuery) never
-// see a bare "{}" with no declared Content-Type.
 func writeJSONEmptyObject(w http.ResponseWriter, status int) {
-	w.Header().Set("Content-Type", "application/json; charset=utf-8")
-	w.Header().Set("X-Content-Type-Options", "nosniff")
-	w.WriteHeader(status)
-	_, _ = w.Write([]byte("{}"))
+	httputil.WriteJSONEmptyObject(w, status)
 }
 
 const (
