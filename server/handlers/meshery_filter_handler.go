@@ -103,22 +103,27 @@ func (h *Handler) handleFilterPOST(
 
 	actedUpon := &userID
 	if err := json.NewDecoder(r.Body).Decode(&parsedBody); err != nil {
-		invalidReqBody := ErrRequestBody(err)
-		h.log.Error(invalidReqBody)
+		// Wrap the decode error in the operation-level ErrSaveFilter so log,
+		// event metadata, wire response, and EventsBuffer publish all carry the
+		// same code. Per-reviewer feedback (PR #18919): clients of a save
+		// endpoint expect a save-side error code; the underlying decode failure
+		// is preserved on the wrapper's LongDescription via err.Error().
+		errSaveFilter := ErrSaveFilter(err)
+		h.log.Error(errSaveFilter)
 
 		description := "Filter request body is corrupted."
 		if parsedBody != nil && parsedBody.FilterData != nil {
 			description = fmt.Sprintf("Filter %s is corrupted.", parsedBody.FilterData.Name)
 		}
 		event := eventBuilder.WithSeverity(events.Error).WithMetadata(map[string]interface{}{
-			"error": invalidReqBody,
+			"error": errSaveFilter,
 		}).WithDescription(description).Build()
 
 		_ = provider.PersistEvent(*event, token)
 		go h.config.EventBroadcaster.Publish(userID, event)
 
-		writeMeshkitError(rw, invalidReqBody, http.StatusBadRequest)
-		addMeshkitErr(&res, ErrGetFilter(err))
+		writeMeshkitError(rw, errSaveFilter, http.StatusBadRequest)
+		addMeshkitErr(&res, errSaveFilter)
 		go h.EventsBuffer.Publish(&res)
 		return
 	}
