@@ -360,17 +360,33 @@ func (h *Handler) loadTestHelperHandler(w http.ResponseWriter, req *http.Request
 		for data := range respChan {
 			bd, err := json.Marshal(data)
 			if err != nil {
+				// We are inside an active SSE connection — Content-Type:
+				// text/event-stream has already been committed above. Calling
+				// http.Error here would silently corrupt the stream (it tries
+				// to set text/plain after headers are flushed, then writes a
+				// trailing newline that breaks SSE framing). Instead, emit an
+				// in-protocol error event using the same LoadTestResponse
+				// envelope the client already understands (status="error" is
+				// handled by the EventSource onmessage consumer in the UI).
 				h.log.Error(models.ErrMarshal(err, "meshery result for shipping"))
-				http.Error(w, models.ErrMarshal(err, "meshery result for shipping").Error(), http.StatusInternalServerError) //nolint:forbidigo // SSE error channel emits text/event-stream by contract
+				errPayload, mErr := json.Marshal(&models.LoadTestResponse{
+					Status:  models.LoadTestError,
+					Message: models.ErrMarshal(err, "meshery result for shipping").Error(),
+				})
+				if mErr != nil {
+					// Last-resort: a static, hand-rolled JSON literal so the
+					// stream stays well-formed even if envelope marshal fails.
+					errPayload = []byte(`{"status":"error","message":"failed to marshal load test result"}`)
+				}
+				_, _ = fmt.Fprintf(w, "data: %s\n\n", errPayload)
+				flusher.Flush()
 				return
 			}
 
 			h.log.Debug("received new data on response channel")
 			_, _ = fmt.Fprintf(w, "data: %s\n\n", bd)
-			if flusher != nil {
-				flusher.Flush()
-				h.log.Debug("Flushed the messages on the wire...")
-			}
+			flusher.Flush()
+			h.log.Debug("Flushed the messages on the wire...")
 		}
 		endChan <- struct{}{}
 		h.log.Debug("response channel closed")
