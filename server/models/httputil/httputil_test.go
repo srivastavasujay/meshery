@@ -270,11 +270,11 @@ type flakyWriter struct {
 }
 
 func (w *flakyWriter) Write(p []byte) (int, error) {
-	if w.failAfter <= w.Buffer.Len() {
+	if w.failAfter <= w.Len() {
 		return 0, fmt.Errorf("injected write failure after %d bytes", w.failAfter)
 	}
 
-	remaining := w.failAfter - w.Buffer.Len()
+	remaining := w.failAfter - w.Len()
 	if len(p) > remaining {
 		if remaining > 0 {
 			_, _ = w.Buffer.Write(p[:remaining])
