@@ -11,12 +11,16 @@ Every non-2xx HTTP response from Meshery Server carries a JSON body with
 as JSON before surfacing errors to users.
 
 > **Migration status:** the JSON contract is enforced for all server endpoints
-> in `server/handlers/` and `server/models/*provider*.go` — any new `http.Error`
-> call there fails CI via the `forbidigo` lint rule. Legitimate exceptions are
-> the SSE error channel in `load_test_handler.go`, healthz probes, the
-> static-asset UI handler, and binary downloads. See PR
-> [#18919](https://github.com/meshery/meshery/pull/18919) for the migration
-> history.
+> in `server/handlers/` and `server/models/*provider*.go`. The `forbidigo` lint
+> rule was added in advisory mode in PR
+> [#18919](https://github.com/meshery/meshery/pull/18919) (CI currently runs
+> with `--new-from-rev=origin/master`, so newly introduced `http.Error` calls
+> in handlers/models block merge while pre-existing usage is surfaced
+> non-blockingly); PR
+> [#18927](https://github.com/meshery/meshery/pull/18927) flips it to fully
+> blocking. Legitimate exceptions are SSE stream handlers
+> (`events_streamer.go`, `load_test_handler.go`), Kubernetes healthz probes,
+> the static-asset UI handler, binary/tar/YAML downloads, and HTTP redirects.
 
 ## Shape
 
@@ -100,8 +104,9 @@ The provider layer (`server/models/remote_provider.go`,
 `server/models/default_local_provider.go`) follows this pattern — see commit
 `ed1ce9f25c` for reference call sites.
 
-Legitimate exceptions (enforced by a `forbidigo` allowlist in `.github/.golangci.yml`; the lint guard was added advisory and later flipped to blocking — see PR [#18919](https://github.com/meshery/meshery/pull/18919) and the follow-up):
-- SSE stream handlers (`Content-Type: text/event-stream`)
-- Kubernetes healthz probes (plain text is the probe contract)
+Legitimate exceptions (enforced by a `forbidigo` allowlist in `.github/.golangci.yml`; the lint guard was added in advisory mode in PR [#18919](https://github.com/meshery/meshery/pull/18919) and is being flipped to fully blocking in PR [#18927](https://github.com/meshery/meshery/pull/18927)):
+- SSE stream handlers, e.g. `events_streamer.go` and `load_test_handler.go` (`Content-Type: text/event-stream`)
+- Kubernetes healthz probes, e.g. `k8s_healthz_handler.go` (plain text is the probe contract)
+- Static-asset UI handler (`ui_handler.go`) — asset-resolution errors, not API surface
 - Binary/tar/YAML downloads
 - HTTP redirects (no body)
