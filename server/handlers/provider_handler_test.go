@@ -104,7 +104,7 @@ func TestProviderUIHandler_NoneEnvVarRedirectsThroughLogin(t *testing.T) {
 	}
 
 	// Regression: previous version of this test did not assert on the cookie
-	// value, which let the empty-cookie loop trigger ship to kanvas.new. The
+	// value, which let the empty-cookie loop trigger ship. The
 	// auto-select branch must always set a non-empty cookie naming a
 	// registered provider.
 	assertProviderCookieIsRegistered(t, resp, "meshery-provider", providers)
@@ -127,7 +127,7 @@ func assertProviderCookieIsRegistered(t *testing.T, resp *http.Response, cookieN
 			continue
 		}
 		if c.Value == "" {
-			t.Fatalf("ProviderUIHandler emitted empty %s cookie — this is the kanvas.new redirect-loop trigger", cookieName)
+			t.Fatalf("ProviderUIHandler emitted empty %s cookie — this is a redirect-loop trigger", cookieName)
 		}
 		if _, ok := providers[c.Value]; !ok {
 			t.Fatalf("ProviderUIHandler emitted %s=%q which is not a registered provider — this would loop via ProviderMiddleware nil-provider path", cookieName, c.Value)
@@ -151,7 +151,7 @@ func assertNoProviderCookieSet(t *testing.T, resp *http.Response, cookieName str
 // providerRegistered) combinations that decide whether ProviderUIHandler may
 // auto-select and redirect, or must degrade to the provider-selection UI.
 //
-// The kanvas.new outage was exactly the (PlaygroundBuild=true, h.Provider="",
+// Meshery extension image outages are exactly the (PlaygroundBuild=true, h.Provider="",
 // any registry) row: the handler wrote an empty meshery-provider cookie,
 // which ProviderMiddleware rightly ignored, which made AuthMiddleware bounce
 // the request back to /provider — infinite loop. Guarding that row, plus the
