@@ -74,7 +74,7 @@ func (h *Handler) ProvidersHandler(w http.ResponseWriter, _ *http.Request) {
 // reachable) and a clear log line pointing at the deployment misconfig.
 func (h *Handler) ProviderUIHandler(w http.ResponseWriter, r *http.Request) {
 	if h.Provider != "" {
-		if _, ok := h.config.Providers[h.Provider]; ok {
+		if h.config.Providers[h.Provider] != nil {
 			http.SetCookie(w, &http.Cookie{
 				Name:     h.config.ProviderCookieName,
 				Value:    h.Provider,
