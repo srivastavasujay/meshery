@@ -282,8 +282,9 @@ make docs-docker
 # Build GraphQL schema
 make graphql-build
 
-# Generate GraphQL documentation
-make graphql-docs-build
+# GraphQL is self-documenting via the introspection endpoint and the GraphQL
+# Playground at http://localhost:9081/api/system/graphql/playground.
+# A static reference snapshot lives at docs/content/en/reference/graphql-apis.md.
 ```
 
 ### Helm Charts
