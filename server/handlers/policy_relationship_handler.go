@@ -546,8 +546,8 @@ func runRelationshipEvaluation(
 		if r == nil {
 			return
 		}
-		panicErr := fmt.Errorf("panic during relationship evaluation: %v\n%s", r, debug.Stack())
-		log.Error(ErrPolicyEval(panicErr))
+		panicErr := fmt.Errorf("panic during relationship evaluation: %v", r)
+		log.Error(fmt.Errorf("%s\n%s", panicErr.Error(), debug.Stack()))
 		tracker.publish(designKey, evalResult{err: panicErr})
 		// Non-blocking send: if the leader's select already returned
 		// via ctx.Done() the receiver is gone and a blocking send
