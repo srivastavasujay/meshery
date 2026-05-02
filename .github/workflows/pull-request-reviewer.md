@@ -2,8 +2,9 @@
 name: Pull Request Reviewer
 description: Reviews newly opened pull requests from trusted repository contributors and leaves concise, polite feedback as PR review comments
 on:
-  pull_request_target:
-    types: [opened, reopened]
+  pull_request:
+    types: [opened]
+  skip-if-match: ${{ !contains(fromJSON('["dependabot[bot]", "copilot", "gemini", "codex", "claude"]'), github.actor) }}
 permissions:
   contents: read
   issues: read
